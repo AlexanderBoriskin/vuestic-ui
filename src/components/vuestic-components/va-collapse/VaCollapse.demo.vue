@@ -16,6 +16,7 @@
         <va-button
           slot="header"
           style="width: 100%;"
+          type="collapse"
         >
           {{ collapseHeader }}
         </va-button>

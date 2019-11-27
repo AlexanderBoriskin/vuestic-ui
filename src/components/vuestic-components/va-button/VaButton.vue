@@ -70,7 +70,13 @@ const buttonContextMixin = makeContextablePropsMixin({
   },
   icon: { type: String, default: '' },
   iconRight: { type: String, default: '' },
-  type: { type: String, default: 'button' },
+  type: {
+    type: String,
+    default: 'button',
+    validator: value => {
+      return ['button', 'collapse'].includes(value)
+    },
+  },
   disabled: { type: Boolean, default: false },
   /* Link props */
   href: { type: String, default: '' },
@@ -103,8 +109,8 @@ export default {
         'va-button--flat': this.c_flat,
         'va-button--outline': this.c_outline,
         'va-button--disabled': this.c_disabled,
-        'va-button--hover': this.hoverState,
-        'va-button--focus': this.focusState,
+        'va-button--hover': this.hoverState && this.c_type !== 'collapse',
+        'va-button--focus': this.focusState && this.c_type !== 'collapse',
         'va-button--without-title': !this.hasTitleData,
         'va-button--with-left-icon': this.c_icon,
         'va-button--with-right-icon': this.c_iconRight,
@@ -139,8 +145,7 @@ export default {
         backgroundImage: '',
         boxShadow: '',
       }
-
-      if (this.focusState) {
+      if (this.focusState && this.c_type !== 'collapse') {
         if (this.c_outline || this.c_flat) {
           computedStyle.color = this.colorComputed
           computedStyle.borderColor = this.c_outline ? this.colorComputed : ''
@@ -148,7 +153,7 @@ export default {
         } else {
           computedStyle.backgroundImage = this.gradientStyle
         }
-      } else if (this.hoverState) {
+      } else if (this.hoverState && this.c_type !== 'collapse') {
         if (this.c_outline || this.c_flat) {
           computedStyle.color = this.colorComputed
           computedStyle.borderColor = this.c_outline ? this.colorComputed : ''
@@ -238,11 +243,11 @@ export default {
   &--default {
     color: $white;
 
-    &:hover {
+    &.va-button--hover {
       opacity: 0.85;
     }
 
-    &:focus,
+    &.va-button--focus,
     &:active {
       filter: brightness(85%);
     }

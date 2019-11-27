@@ -1,11 +1,11 @@
 <template>
   <va-input-wrapper
     class="va-input"
-    :disabled="disabled"
-    :success="success"
+    :disabled="c_disabled"
+    :success="c_success"
     :messages="messages"
-    :error="error"
-    :error-messages="errorMessages"
+    :error="internalError"
+    :error-messages="internalErrorMessages"
     :error-count="errorCount"
   >
     <div
@@ -14,28 +14,31 @@
       :style="containerStyles"
     >
       <div
-        v-if="success || error || $slots.prepend || (removable && hasContent)"
+        v-if="c_success || internalError || $slots.prepend || (removable && hasContent)"
         class="va-input__container__icon-wrapper va-input__container__icon-wrapper--start"
       >
         <va-icon
-          v-if="success"
+          v-if="c_success"
           class="va-input__container__icon"
           :style="iconStyles"
           name="check"
         />
         <va-icon
-          v-if="error"
+          v-if="internalError"
           class="va-input__container__icon"
           :style="iconStyles"
           name="warning"
         />
-        <div :style="iconStyles">
+        <div
+          class="va-input__container__slot"
+          :style="iconStyles"
+        >
           <slot name="prepend" />
         </div>
       </div>
       <div
         class="va-input__container__content-wrapper"
-        :style="{ paddingTop: label ? '' : '0'}"
+        :style="{ paddingTop: c_label ? '' : '0'}"
       >
         <label
           :style="labelStyles"
@@ -48,52 +51,57 @@
           v-if="isTextarea"
           class="va-input__container__input"
           :style="textareaStyles"
-          :aria-label="label"
-          :placeholder="placeholder"
-          :disabled="disabled"
-          :readonly="readonly"
-          :value="value"
+          :aria-label="c_label"
+          :placeholder="c_placeholder"
+          :disabled="c_disabled"
+          :readonly="c_readonly"
+          :value="c_value"
           v-on="inputListeners"
           v-bind="$attrs"
           ref="input"
+          :tabindex="c_tabindex"
         />
         <input
           v-else
           class="va-input__container__input"
-          :style="{ paddingBottom: label ? '0.125rem' : '0.875rem' }"
-          :aria-label="label"
-          :type="type"
-          :placeholder="placeholder"
-          :disabled="disabled"
-          :readonly="readonly"
-          :value="value"
+          :style="{ paddingBottom: c_label ? '0.125rem' : '0.875rem' }"
+          :aria-label="c_label"
+          :type="c_type"
+          :placeholder="c_placeholder"
+          :disabled="c_disabled"
+          :readonly="c_readonly"
+          :value="c_value"
           v-on="inputListeners"
           v-bind="$attrs"
           ref="input"
+          :tabindex="c_tabindex"
         >
       </div>
       <div
-        v-if="success || error || $slots.append || (removable && hasContent)"
+        v-if="c_success || internalError || $slots.append || (c_removable && hasContent)"
         class="va-input__container__icon-wrapper va-input__container__icon-wrapper--end"
       >
         <va-icon
-          v-if="success"
+          v-if="c_success"
           class="va-input__container__icon"
           :style="iconStyles"
           name="check"
         />
         <va-icon
-          v-if="error"
+          v-if="internalError"
           class="va-input__container__icon"
           :style="iconStyles"
           name="warning"
         />
-        <div :style="iconStyles">
+        <div
+          class="va-input__container__slot"
+          :style="iconStyles"
+        >
           <slot name="append" />
         </div>
         <va-icon
-          v-if="removable && hasContent"
-          @click.native="clearContent()"
+          v-if="c_removable && hasContent"
+          @click.native="clear()"
           class="va-input__container__close-icon"
           :style="iconStyles"
           name="highlight_off"
@@ -104,131 +112,157 @@
 </template>
 
 <script>
+import isFunction from 'lodash/isFunction'
+import isBoolean from 'lodash/isBoolean'
+import flatten from 'lodash/flatten'
 import VaInputWrapper from '../va-input/VaInputWrapper'
 import VaIcon from '../va-icon/VaIcon'
 import { getHoverColor } from './../../../services/color-functions'
 import calculateNodeHeight from './calculateNodeHeight'
 import { ColorThemeMixin } from '../../../services/ColorThemePlugin'
-import { ContextPluginMixin, getContextPropValue } from '../../context-test/context-provide/ContextPlugin'
+import { makeContextablePropsMixin } from './../../context-test/context-provide/ContextPlugin'
+
+const InputContextMixin = makeContextablePropsMixin({
+  color: {
+    type: String,
+    default: '',
+  },
+  value: {
+    type: [String, Number],
+    default: '',
+  },
+  label: {
+    type: String,
+    default: '',
+  },
+  placeholder: {
+    type: String,
+    default: '',
+  },
+  type: {
+    type: String,
+    default: 'text',
+  },
+  disabled: {
+    type: Boolean,
+    default: false,
+  },
+  readonly: {
+    type: Boolean,
+    default: false,
+  },
+  removable: {
+    type: Boolean,
+    default: false,
+  },
+  tabindex: {
+    type: Number,
+    default: 0,
+  },
+  errorCount: {
+    type: Number,
+    default: 1,
+  },
+  success: {
+    type: Boolean,
+    default: false,
+  },
+  messages: {
+    type: Array,
+    default () {
+      return []
+    },
+  },
+  error: {
+    type: Boolean,
+    default: false,
+  },
+  errorMessages: {
+    type: Array,
+    default () {
+      return []
+    },
+  },
+
+  // textarea-specific
+  autosize: {
+    type: Boolean,
+    default: false,
+  },
+  minRows: {
+    type: Number,
+    default: null,
+    validator: (val) => {
+      if (!(val > 0 && (val | 0) === val)) {
+        throw new Error(`\`minRows\` must be a positive integer grater than 0, but ${val} is provided`)
+      }
+      return true
+    },
+  },
+  maxRows: {
+    type: Number,
+    validator: (val) => {
+      if (!(val > 0 && (val | 0) === val)) {
+        throw new Error(`\`maxRows\` must be a positive integer grater than 0, but ${val} is provided`)
+      }
+      return true
+    },
+    default: null,
+  },
+  rules: {
+    type: Array,
+    default () {
+      return []
+    },
+  },
+})
+
+const prepareValidations = (messages = [], callArguments = null) =>
+  messages
+    .map((message) => isFunction(message) ? message(callArguments) : message)
+    .filter(Boolean)
 
 export default {
   name: 'VaInput',
-  extends: VaInputWrapper,
-  mixins: [ColorThemeMixin, ContextPluginMixin],
+  mixins: [ColorThemeMixin, InputContextMixin],
   components: { VaInputWrapper, VaIcon },
-  props: {
-    color: {
-      type: String,
-      default () {
-        return getContextPropValue(this, 'color', '')
-      },
-    },
-    value: {
-      type: [String, Number],
-      default () {
-        return getContextPropValue(this, 'value', '')
-      },
-    },
-    label: {
-      type: String,
-      default () {
-        return getContextPropValue(this, 'label', '')
-      },
-    },
-    placeholder: {
-      type: String,
-      default () {
-        return getContextPropValue(this, 'placeholder', '')
-      },
-    },
-    type: {
-      type: String,
-      default () {
-        return getContextPropValue(this, 'type', 'text')
-      },
-    },
-    disabled: {
-      type: Boolean,
-      default () {
-        return getContextPropValue(this, 'disabled', false)
-      },
-    },
-    readonly: {
-      type: Boolean,
-      default () {
-        return getContextPropValue(this, 'readonly', false)
-      },
-    },
-    removable: {
-      type: Boolean,
-      default () {
-        return getContextPropValue(this, 'removable', false)
-      },
-    },
-
-    // textarea-specific
-    autosize: {
-      type: Boolean,
-      default () {
-        return getContextPropValue(this, 'autosize', false)
-      },
-    },
-    minRows: {
-      type: Number,
-      default () {
-        return getContextPropValue(this, 'minRows', null)
-      },
-      validator: (val) => {
-        if (!(val > 0 && (val | 0) === val)) {
-          throw new Error(`\`minRows\` must be a positive integer grater than 0, but ${val} is provided`)
-        }
-        return true
-      },
-    },
-    maxRows: {
-      type: Number,
-      validator: (val) => {
-        if (!(val > 0 && (val | 0) === val)) {
-          throw new Error(`\`maxRows\` must be a positive integer grater than 0, but ${val} is provided`)
-        }
-        return true
-      },
-      default () {
-        return getContextPropValue(this, 'maxRows', null)
-      },
-    },
-  },
   mounted () {
     this.adjustHeight()
   },
   watch: {
     value () {
       this.adjustHeight()
+      if (this.isTouchedValidation) {
+        this.validate()
+      }
     },
   },
   data () {
     return {
       isFocused: false,
+      isTouchedValidation: false,
+      internalErrorMessages: prepareValidations(this.errorMessages),
+      internalError: this.error,
     }
   },
   computed: {
     iconStyles () {
-      if (this.error) {
+      if (this.internalError) {
         return { color: this.$themes.danger }
       }
 
-      if (this.success) {
+      if (this.c_success) {
         return { color: this.$themes.success }
       }
 
       return { color: this.$themes.gray }
     },
     labelStyles () {
-      if (this.error) {
+      if (this.internalError) {
         return { color: this.$themes.danger }
       }
 
-      if (this.success) {
+      if (this.c_success) {
         return { color: this.$themes.success }
       }
 
@@ -237,11 +271,11 @@ export default {
     containerStyles () {
       return {
         backgroundColor:
-          this.error ? getHoverColor(this.$themes['danger'])
-            : this.success ? getHoverColor(this.$themes['success']) : '#f5f8f9',
+          this.internalError ? getHoverColor(this.$themes.danger)
+            : this.c_success ? getHoverColor(this.$themes.success) : '#f5f8f9',
         borderColor:
-          this.error ? this.$themes.danger
-            : this.success ? this.$themes.success
+          this.internalError ? this.$themes.danger
+            : this.c_success ? this.$themes.success
               : this.isFocused ? this.$themes.dark : this.$themes.gray,
       }
     },
@@ -286,10 +320,10 @@ export default {
       )
     },
     hasContent () {
-      return ![null, undefined, ''].includes(this.value)
+      return ![null, undefined, ''].includes(this.c_value)
     },
     isTextarea () {
-      return this.type === 'textarea'
+      return this.c_type === 'textarea'
     },
   },
   methods: {
@@ -306,8 +340,41 @@ export default {
       Object.assign(this.$refs.input.style, textareaStyles)
     },
 
-    clearContent () {
+    // public methods
+    focus () {
+      this.$refs.input.focus()
+    },
+    reset () {
       this.$emit('input', '')
+    },
+    validate () {
+      if (this.internalError && !this.isTouchedValidation) {
+        return false
+      }
+
+      if (!this.isTouchedValidation) {
+        this.isTouchedValidation = true
+      }
+
+      this.internalError = false
+      this.internalErrorMessages = []
+
+      if (this.c_rules.length > 0) {
+        prepareValidations(flatten(this.c_rules), this.c_value)
+          .forEach((validateResult) => {
+            if (!isBoolean(validateResult)) {
+              this.internalErrorMessages.push(validateResult)
+              this.internalError = true
+            }
+          })
+      }
+
+      return !this.internalError
+    },
+    resetValidation () {
+      this.internalErrorMessages = []
+      this.internalError = false
+      this.isTouchedValidation = false
     },
   },
 }
@@ -326,6 +393,10 @@ export default {
     border-width: 0 0 thin 0;
     border-top-left-radius: 0.5rem;
     border-top-right-radius: 0.5rem;
+
+    &__slot {
+      display: flex;
+    }
 
     &__content-wrapper {
       display: flex;
