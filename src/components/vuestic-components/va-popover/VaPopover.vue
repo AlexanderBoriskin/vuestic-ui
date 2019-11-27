@@ -5,6 +5,7 @@
     :disabled="disabled"
     :placement="placement"
     :auto-hide="autoHide"
+    :delay="delay"
     popover-class="va-popover"
     popover-inner-class="va-popover__inner"
     popover-wrapper-class="va-popover__wrap"
@@ -87,6 +88,10 @@ export default {
     autoHide: {
       type: Boolean,
       default: true,
+    },
+    delay: {
+      type: Object,
+      default: () => { return { show: 500, hide: 100 } },
     },
   },
   computed: {
