@@ -1,8 +1,6 @@
 <template>
   <li :class="computedClass">
-    <a
-      href="#"
-      target="_self"
+    <div
       @mouseenter="updateHoverState(true)"
       @mouseleave="updateHoverState(false)"
       @click.stop.prevent="toggleMenuItem()"
@@ -28,26 +26,24 @@
           :name="`fa fa-angle-${expanded ? 'up' : 'down'}`"
         />
       </div>
-    </a>
-    <expanding v-if="!minimized">
-      <div
+    </div>
+    <transition-expand v-if="!minimized">
+      <ul
         class="va-sidebar-link-group__submenu in"
         v-show="expanded"
         ref="linkGroupWrapper"
       >
         <slot />
-      </div>
-    </expanding>
+      </ul>
+    </transition-expand>
     <va-dropdown
       v-if="minimized"
       position="right"
       fixed
       :prevent-overflow="false"
     >
-      <a
-        href="#"
+      <div
         slot="anchor"
-        target="_self"
         @mouseenter="updateHoverState"
         @mouseleave="updateHoverState"
         :style="sidebarLinkStyles"
@@ -66,22 +62,25 @@
           name="more_horiz"
           class="va-sidebar-link__after"
           :style="iconStyles"
-        />
-      </a>
-      <div
+        >
+          more_horiz
+        </va-icon>
+      </div>
+      <ul
         class="va-sidebar-link-group__submenu in"
         :style="{backgroundColor: $themes[color]}"
       >
         <slot />
-      </div>
+      </ul>
     </va-dropdown>
   </li>
 </template>
 
 <script>
-import Expanding from 'vue-bulma-expanding/src/Expanding'
 import VaIcon from '../va-icon/VaIcon'
+import VaDropdown from '../va-dropdown/VaDropdown'
 import { hex2hsl } from '../../../services/color-functions'
+import TransitionExpand from './TransitionExpand'
 
 export default {
   name: 'VaSidebarLinkGroup',
@@ -108,8 +107,9 @@ export default {
     },
   },
   components: {
+    TransitionExpand,
     VaIcon,
-    Expanding,
+    VaDropdown,
   },
   data () {
     return {
