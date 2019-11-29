@@ -76,12 +76,13 @@ export default {
     clickable: Boolean,
     hoverable: Boolean,
     noPagination: Boolean,
+    defaultHeader: Boolean,
     noDataLabel: {
       type: String,
       default: undefined,
     },
     rowClass: {
-      type: Function,
+      type: [String, Function],
       default: undefined,
     },
     sortOrder: {
@@ -141,6 +142,9 @@ export default {
         name += ' va-table--hoverable'
       }
 
+      if (this.defaultHeader) {
+        name = 'va-data-table__vuetable'
+      }
       return name
     },
     dataManagerComputed (sortOrder, pagination) {

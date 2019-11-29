@@ -21,6 +21,13 @@
       <p>Clicking in the columns sorts it by the last letter</p>
       <va-data-table-custom-data-manager-example />
     </VbCard>
+
+    <VbCard
+      title="Custom Vuetable"
+      width="100%"
+    >
+      <va-data-table-custom-styling />
+    </VbCard>
   </VbDemo>
 </template>
 
@@ -28,9 +35,11 @@
 import VaDataTableStaticDataExample from './VaDataTableStaticDataExample.vue'
 import VaDataTableApiModeExample from './VaDataTableApiModeExample.vue'
 import VaDataTableCustomDataManagerExample from './VaDataTableCustomDataManagerExample'
+import VaDataTableCustomStyling from './VaDataTableCustomStyling'
 
 export default {
   components: {
+    VaDataTableCustomStyling,
     VaDataTableStaticDataExample,
     VaDataTableApiModeExample,
     VaDataTableCustomDataManagerExample,
@@ -39,4 +48,6 @@ export default {
 </script>
 
 <style lang="scss">
+  @import '../../vuestic-sass/resources/resources';
+  @import './../../vuestic-sass/global/typography';
 </style>
