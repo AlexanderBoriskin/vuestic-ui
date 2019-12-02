@@ -1,29 +1,31 @@
 <template>
-  <router-link
-    :class="computedLinkClass"
-    @mouseenter.native="updateHoverState(true)"
-    @mouseleave.native="updateHoverState(false)"
-    :style="computedLinkStyles"
-    active-class="va-sidebar-link--active"
-    :to="to"
-    :target="target"
-  >
-    <va-icon
-      v-if="icon"
-      class="va-sidebar-link__content__icon"
-      :style="computedIconStyles"
-      :name="icon"
-    />
-    <div class="va-sidebar-link__content__title">
-      <slot name="title"/>
-      {{title}}
-    </div>
-  </router-link>
+  <li>
+    <router-link
+      :class="computedLinkClass"
+      @mouseenter.native="updateHoverState(true)"
+      @mouseleave.native="updateHoverState(false)"
+      :style="computedLinkStyles"
+      active-class="va-sidebar-link--active"
+      :to="to"
+      :target="target"
+    >
+      <va-icon
+        v-if="icon"
+        class="va-sidebar-link__content__icon"
+        :style="computedIconStyles"
+        :name="icon"
+      />
+      <div class="va-sidebar-link__content__title">
+        <slot name="title"/>
+        {{title}}
+      </div>
+    </router-link>
+  </li>
 </template>
 
 <script>
 import { ColorThemeMixin } from '../../../services/ColorThemePlugin'
-import { getHoverColor } from '../../../services/color-functions'
+import { hex2hsl } from '../../../services/color-functions'
 import VaIcon from '../va-icon/VaIcon'
 
 export default {
@@ -71,10 +73,22 @@ export default {
       }
     },
     computedLinkStyles () {
+      let getBackgroundColor = () => {
+        let color = hex2hsl(this.$themes.secondary)
+
+        color.s -= 13
+        color.l += 15
+
+        if (color.s < 0) color.s = 0
+        if (color.l > 100) color.l = 100
+
+        return color.css
+      }
+
       if (this.isHovered || this.isActive) {
         return {
           color: this.$themes['primary'],
-          backgroundColor: getHoverColor(this.$themes['primary']),
+          backgroundColor: getBackgroundColor(),
           borderColor: this.isActive ? this.$themes['primary'] : 'transparent',
         }
       } else return {}// else <- controlled by CSS (color in rgba)

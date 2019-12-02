@@ -71,7 +71,7 @@
           <span
             class="va-select__tags__tag"
           >
-            {{ valueProxy.join(", ") }}
+            {{ [...this.valueProxy.map(val => getText(val))].join(", ") }}
           </span>
         </span>
         <span v-else-if="displayedText" class="va-select__displayed-text">{{displayedText}}</span>
@@ -322,7 +322,7 @@ export default {
 
       if (this.multiple) {
         this.valueProxy = isSelected
-          ? value.filter(optionSelected => option !== optionSelected)
+          ? value.filter(optionSelected => !this.compareOptions(option, optionSelected))
           : [...value, option]
         this.$refs.dropdown.updatePopper()
       } else {

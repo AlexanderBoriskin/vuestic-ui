@@ -1,11 +1,12 @@
 <template>
   <aside
+    class="va-sidebar"
     :class="computedClass"
     :style="{ backgroundColor: colorComputed }"
   >
-    <div class="va-sidebar__menu">
+    <ul class="va-sidebar__menu">
       <slot name="menu"></slot>
-    </div>
+    </ul>
   </aside>
 </template>
 
@@ -29,7 +30,6 @@ export default {
   computed: {
     computedClass () {
       return {
-        'va-sidebar': true,
         'va-sidebar--minimized': this.minimized,
       }
     },
@@ -60,6 +60,8 @@ export default {
 
   @include media-breakpoint-down(sm) {
     top: $sidebar-mobile-top;
+    min-height: $sidebar-mobile-min-height;
+    height: $sidebar-mobile-height;
   }
 
   @include media-breakpoint-down(xs) {
@@ -73,10 +75,6 @@ export default {
       .va-sidebar-link__content {
         padding-right: 0;
       }
-    }
-
-    & + .content-wrap {
-      margin-left: $sidebar-width--hidden;
     }
   }
 }

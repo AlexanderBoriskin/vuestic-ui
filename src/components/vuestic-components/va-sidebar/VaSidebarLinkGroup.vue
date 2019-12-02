@@ -1,8 +1,6 @@
 <template>
   <li :class="computedClass">
-    <a
-      href="#"
-      target="_self"
+    <div
       @mouseenter="updateHoverState(true)"
       @mouseleave="updateHoverState(false)"
       @click.stop.prevent="toggleMenuItem()"
@@ -26,26 +24,24 @@
           :style="iconStyles"
           :name="`fa fa-angle-${expanded ? 'up' : 'down'}`"/>
       </div>
-    </a>
-    <expanding v-if="!minimized">
-      <div
+    </div>
+    <transition-expand v-if="!minimized">
+      <ul
         class="va-sidebar-link-group__submenu in"
         v-show="expanded"
         ref="linkGroupWrapper"
       >
         <slot/>
-      </div>
-    </expanding>
+      </ul>
+    </transition-expand>
     <va-dropdown
       v-if="minimized"
       position="right"
       fixed
       :preventOverflow="false"
     >
-      <a
-        href="#"
+      <div
         slot="anchor"
-        target="_self"
         @mouseenter="updateHoverState"
         @mouseleave="updateHoverState"
         :style="sidebarLinkStyles"
@@ -67,21 +63,22 @@
         >
           more_horiz
         </va-icon>
-      </a>
-      <div
+      </div>
+      <ul
         class="va-sidebar-link-group__submenu in"
         :style="{backgroundColor: $themes[color]}"
       >
         <slot/>
-      </div>
+      </ul>
     </va-dropdown>
   </li>
 </template>
 
 <script>
-import Expanding from 'vue-bulma-expanding/src/Expanding'
 import VaIcon from '../va-icon/VaIcon'
-import { getHoverColor } from '../../../services/color-functions'
+import VaDropdown from '../va-dropdown/VaDropdown'
+import { hex2hsl } from '../../../services/color-functions'
+import TransitionExpand from './TransitionExpand'
 
 export default {
   name: 'va-sidebar-link-group',
@@ -97,8 +94,9 @@ export default {
     },
   },
   components: {
+    TransitionExpand,
     VaIcon,
-    Expanding,
+    VaDropdown,
   },
   data () {
     return {
@@ -154,10 +152,22 @@ export default {
       }
     },
     sidebarLinkStyles () {
+      let getBackgroundColor = () => {
+        let color = hex2hsl(this.$themes.secondary)
+
+        color.s -= 13
+        color.l += 15
+
+        if (color.s < 0) color.s = 0
+        if (color.l > 100) color.l = 100
+
+        return color.css
+      }
+
       if (this.isHovered || this.isActive) {
         return {
           color: this.$themes['primary'],
-          backgroundColor: getHoverColor(this.$themes['primary']),
+          backgroundColor: getBackgroundColor(),
           borderColor: this.isActive ? this.$themes['primary'] : 'transparent',
         }
       } else return {}
@@ -174,6 +184,7 @@ export default {
 
 <style lang="scss">
 @import "../../vuestic-sass/resources/resources";
+
 .va-sidebar-link-group {
   flex-direction: column;
 
